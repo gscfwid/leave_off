@@ -29,6 +29,7 @@ class leaves(db.Model):
     lvdate = db.Column(db.String(20))
     reason = db.Column(db.String(512))
     status = db.Column(db.Integer)
+    userlevel = db.Column(db.Integer)
     # __tablename__ = 'leaves'
     # __table_args__ = {'autoload': True, 'autoload_with': db.engine}
     # def __repr__(self):
@@ -65,6 +66,7 @@ def register():
     if request.method == 'POST':
         username = request.json['username']
         password = request.json['password']
+        oclevel = request.json['selectedRole']
         # confirm_password = request.form['confirm_password']
         permission_level = 1
 
@@ -80,7 +82,8 @@ def register():
         if existing_user:
             return jsonify({"message": "用户名已经注册过了", "success": False})
         else:
-            new_user = User(username=username, password_hash=hashed_password, permission = permission_level)
+            new_user = User(username=username, password_hash=hashed_password, 
+                            permission=permission_level, level=oclevel)
             db.session.add(new_user)
             db.session.commit()
             return jsonify({"message": "注册成功", "success": True})
@@ -125,16 +128,18 @@ def fetch_data():
     lvnames = [[i.name for i in leaves.query.filter_by(lvdate=day).all()] for day in days]
     lvreasons = [[i.reason for i in leaves.query.filter_by(lvdate=day).all()] for day in days]
     lvstatuses = [[i.status for i in leaves.query.filter_by(lvdate=day).all()] for day in days]
+    lvlevels = [[i.userlevel for i in leaves.query.filter_by(lvdate=day).all()] for day in days]
     # print(lvnames)
     # Format and send the results back to frontend
     # formatted_results = format_results(lvname)  # You'll need to implement this based on your data
-    return jsonify({"names": lvnames, "reasons": lvreasons, "statuses": lvstatuses})
+    return jsonify({"names": lvnames, "reasons": lvreasons, "statuses": lvstatuses, "userlevel": lvlevels})
 
 @app.route('/submit-data', methods=['POST'])
 def submit_data():
     data = request.json
     date = data['date']
     text = data['text']
+    level = data['level']
     existing_lv = leaves.query.filter_by(name=current_user.username, lvdate=date).first()
     today = datetime.now().strftime("%Y-%m-%d")
     max_lv = leaves.query.filter(and_(leaves.name==current_user.username, leaves.lvdate > today)).all()
@@ -143,7 +148,7 @@ def submit_data():
     elif len(max_lv) > 4:
         return jsonify({"message": "请假次数超了", "date": date, "name": current_user.username})
     else:
-        new_leave = leaves(name=current_user.username, lvdate = date, reason = text, status = 1)
+        new_leave = leaves(name=current_user.username, lvdate=date, reason=text, status=1, userlevel=level)
         db.session.add(new_leave)
         db.session.commit()
 
@@ -192,9 +197,11 @@ def reject():
 def user_info():
     # 返回当前用户的信息
     permission = User.query.filter_by(username=current_user.username).first().permission
+    userlevel = User.query.filter_by(username=current_user.username).first().level
     # print(permission)
     return jsonify({"username": current_user.username, 
-                    "permission": permission})
+                    "permission": permission,
+                    "userlevel": userlevel})
 
 if __name__ == '__main__':
     with app.app_context():

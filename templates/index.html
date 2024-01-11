@@ -87,9 +87,11 @@
                 dates: [],
                 weeks: [],
                 names: [],
+                levels: [],
                 statuses: [],
                 reasons: [],
                 username: null,
+                userlevel: null,
                 permission: null,
                 clickdate: null,
                 clickname: null,
@@ -155,9 +157,9 @@
                             return response.json();  // 转换响应体为JSON
                         })
                         .then(data => { this.names = data["names"];
-                            this.reasons = data["reasons"]
+                            this.reasons = data["reasons"];
+                            this.levels = data['userlevel'];
                             this.statuses = this.less4(data["statuses"])
-                            console.log(this.names)
                         })
                         .then()
                         .catch(error => console.error('Error:', error));
@@ -181,7 +183,8 @@
                         },
                         body: JSON.stringify({
                             date: this.currentDate,
-                            text: this.currentInput
+                            text: this.currentInput,
+                            level: this.userlevel
                         })
                     })
                     .then(response => response.json())
@@ -189,7 +192,7 @@
                         console.log("Data submitted successfully", data);
                         // alert(JSON.stringify(data.name) + JSON.stringify(data.message) + '\n请假日期' + JSON.stringify(data.date));
                         alert(data.name + data.message + '\n请假日期' + data.date);
-                        window.location.reload();
+                        this.fetchData(this.dates);
                     })
                     .catch(error => console.error('Error:', error));
                 },
@@ -204,6 +207,7 @@
                         .then(data => {
                             this.username = data.username;
                             this.permission = data.permission;
+                            this.userlevel = data.userlevel;
                         })
                         .catch(error => {
                             console.error("Fetch error: ", error);
@@ -220,8 +224,8 @@
                     if (this.username === this.names[i][l] || this.permission === 0) {
                         this.showDiv = true;
                         this.clickdate = this.dates[i];
-                        this.clickname = this.names[i][l]
-                        this.clickreason = this.reasons[i][l]
+                        this.clickname = this.names[i][l];
+                        this.clickreason = this.reasons[i][l];
                     } else {
                         return ''
                     }
@@ -308,14 +312,30 @@
                 },
                 less4(doubleList) {// 最多四个被批准
                     for (let i = 0; i < doubleList.length; i++) {  // 遍历每个子列表
-                        for (let j = 0; j < Math.min(4, doubleList[i].length); j++) {  // 遍历子列表的前四个元素
-                            if (doubleList[i][j] === 1) {  // 如果元素是1
+                        let maxappr1 = 0
+                        let maxappr2 = 0
+                        for (let j = 0; j <  doubleList[i].length; j++) {  // 遍历子列表的前四个元素
+                            if (doubleList[i][j] === 1 && this.levels[i][j] === 1 && maxappr1 < 2) {  // 如果元素是1
                                 doubleList[i][j] = 2;  // 将其改为2
+                                maxappr1 ++
+                            } else if (doubleList[i][j] === 1 && this.levels[i][j] === 2 && maxappr2 < 2) {
+                                doubleList[i][j] = 2;
+                                maxappr2 ++
                             }
                         }
                     }
                     return doubleList;
                 }
+                // less4(doubleList) {// 最多四个被批准
+                //     for (let i = 0; i < doubleList.length; i++) {  // 遍历每个子列表
+                //         for (let j = 0; j < Math.min(4, doubleList[i].length); j++) {  // 遍历子列表的前四个元素
+                //             if (doubleList[i][j] === 1) {  // 如果元素是1
+                //                 doubleList[i][j] = 2;  // 将其改为2
+                //             }
+                //         }
+                //     }
+                //     return doubleList;
+                // }
             }
         })
     </script>
