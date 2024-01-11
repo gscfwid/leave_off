@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=0.7">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="[[ url_for('static', filename='css/style.css') ]]">
+    <title>打工人的春天</title>
+
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">打工人的春天</h1> 
+    </div>
+    <div id="app" class="container">
+        <div class="d-flex justify-content-between">
+            <a>登录用户: {{ username }}<br>
+                点击日期请假
+                <span class="bg-success d-inline-block" style="width: 1em; height: 1em;"></span> 已批准
+                <span class="bg-danger d-inline-block" style="width: 1em; height: 1em;"></span> 已拒绝
+                <span class="bg-secondary d-inline-block" style="width: 1em; height: 1em;"></span> 申请中
+            </a>
+            <a class="clickable" href="/logout"><p  class="text-success">注销用户</p></a>
+        </div>
+        <nav aria-label="Page navigation example">
+            <ul class="pagination">
+              <li class="page-item"><a class="page-link" @click="get_thismonth">这月</a></li>
+              <li class="page-item"><a class="page-link" @click="get_nextmonth">下月</a></li>
+              <li class="page-item"><a class="page-link" @click="get_next2month">下下月</a></li>
+            </ul>
+        </nav>
+        <table class="table table-bordered table-striped table-hover">
+                <tr v-for="(date, i) in dates" :key="i" >
+                    <!-- 添加点击事件 -->
+                        <td :class="{ clickable: permission === 1 }" @click="showDialog(date)" class = "col" style="width: 20%">{{ date }}</td>
+                        <td class = "col" style="width: 10%">{{ weeks[i] }}</td>
+                        <td v-for="(name, l) in names[i]" :key="l" :class="[getClass(name), bgColor(i, l)]" @click="clickMethod(i, l)" >{{ name }}</td>
+                </tr>
+        </table>
+        <!-- Modal -->
+        <div v-if="showDiv" class="modal modal-dialog-centered" tabindex="-1" role="dialog" style="display: block;" @click.self="showDiv = false">
+            <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                <h5 class="modal-title">请假信息</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="showDiv = false">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                </div>
+                <div class="modal-body">
+                <p>请假人: {{ clickname }}</p>
+                <p>请假日期: {{ clickdate }}</p>
+                <p>请假原因: {{ clickreason }}</p>
+                </div>
+                <div class="modal-footer">
+                <button v-if="permission === 0" type="button" class="btn btn-success" @click="approve">批准</button>
+                <button v-if="permission === 0" type="button" class="btn btn-danger" @click="reject">拒绝</button>
+                <button type="button" class="btn btn-secondary" @click="delete_lv">删除</button>
+                </div>
+            </div>
+            </div>
+        </div>
+  
+        <!-- <div v-if="showDiv" class="dialog-overlay, " @click.self="showDiv = false">
+            <div class="dialog">
+              <p>请假人: {{ clickname }}
+                <br>请假日期: {{ clickdate}}</p>
+              <button v-if="permission === 0" @click="approve">批准</button>
+              <button v-if="permission === 0" @click="reject">拒绝</button>
+              <button @click="delete_lv">删除</button>
+            </div>
+        </div> -->
+    </div>
+
+
+    <!-- 引入 Vue.js和vue-tooltip -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>   
+    <script src="https://unpkg.com/v-tooltip"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/popper.js/1.16.1/umd/popper.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                threemonth: [],
+                threemweek: [],
+                dates: [],
+                weeks: [],
+                names: [],
+                statuses: [],
+                reasons: [],
+                username: null,
+                permission: null,
+                clickdate: null,
+                clickname: null,
+                clickreason: null,
+                showDiv: false
+            },
+            created: function () {
+                let today = new Date();
+                let nextMonth = new Date();
+                let count = 0;
+                while (count < 3) {
+                    // today.setMonth(today.getDate() + count * 30);
+                    nextMonth.setDate(today.getDate() + 30);
+                // 获得第一个月的日期
+                    let tmpdates = [];
+                    let tmpweeks = []; 
+                    while (today < nextMonth) {
+                    // this.fetchData(this.formatDate(today));
+                        tmpdates.push(this.formatDate(today)["date"]);
+                        tmpweeks.push(this.formatDate(today)["week"]);
+                        today.setDate(today.getDate() + 1);
+                    };
+                    this.threemonth.push(tmpdates);
+                    this.threemweek.push(tmpweeks);
+                    count ++;
+                    
+                };
+                
+                this.dates = this.threemonth[0];
+                this.weeks = this.threemweek[0];
+                this.fetchData(this.dates);
+                // console.log(this.threemonth[0]);
+                // 获得用户信息
+                this.get_userinfo()
+            },
+            methods: {
+                formatDate(d) { //把日期转换为年月日和星期
+                    let month = '' + (d.getMonth() + 1), // months are 0 based in JS
+                        day = '' + d.getDate(),
+                        year = d.getFullYear();
+                    let weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+                    let weekDay = weekDays[d.getDay()];
+                    if (month.length < 2) 
+                        month = '0' + month;
+                    if (day.length < 2) 
+                        day = '0' + day;
+
+                    return {"date":[year, month, day].join('-'), "week": weekDay}; // YYYY-MM-DD
+                },
+                fetchData(dates) { //用日期查询数据库中的姓名、请假原因、申请状态
+                    fetch('/fetch-data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({dates})
+                        })
+                        .then(response => {
+                        // 检查响应是否成功
+                            if (!response.ok) {
+                                throw new Error("Network response was not ok " + response.statusText);
+                            }
+                            return response.json();  // 转换响应体为JSON
+                        })
+                        .then(data => { this.names = data["names"];
+                            this.reasons = data["reasons"]
+                            this.statuses = this.less4(data["statuses"])
+                            console.log(this.names)
+                        })
+                        .then()
+                        .catch(error => console.error('Error:', error));
+                },
+                showDialog(date) {// 弹出对话框让用户输入文本
+                    this.currentDate = date;
+                    if (this.permission === 1) {
+                        var userInput = prompt('请填入' + date + '的请假事由');
+                        if (userInput) {
+                            this.currentInput = userInput;
+                            this.sendData();
+                        }
+                    }
+                },
+                sendData() {
+                    // 发送请求到后端，将请假日期理由写入数据库
+                    fetch('/submit-data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            date: this.currentDate,
+                            text: this.currentInput
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Data submitted successfully", data);
+                        // alert(JSON.stringify(data.name) + JSON.stringify(data.message) + '\n请假日期' + JSON.stringify(data.date));
+                        alert(data.name + data.message + '\n请假日期' + data.date);
+                        window.location.reload();
+                    })
+                    .catch(error => console.error('Error:', error));
+                },
+                get_userinfo() { //获取登录账号和权限
+                    fetch('/api/usr_info')
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error("Network response was not ok");
+                            }
+                                return response.json();
+                        })
+                        .then(data => {
+                            this.username = data.username;
+                            this.permission = data.permission;
+                        })
+                        .catch(error => {
+                            console.error("Fetch error: ", error);
+                        });
+                },
+                getClass(name) { //判断名字是否可点击
+                    if (this.permission === 0 || this.username === name) {
+                        return 'clickable'
+                    } else {
+                        return ''
+                    }
+                },
+                clickMethod(i, l) {//点击名字后更新需要操作的数据
+                    if (this.username === this.names[i][l] || this.permission === 0) {
+                        this.showDiv = true;
+                        this.clickdate = this.dates[i];
+                        this.clickname = this.names[i][l]
+                        this.clickreason = this.reasons[i][l]
+                    } else {
+                        return ''
+                    }
+                },
+                approve() {//批准申请
+                    fetch('/approve', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            name: this.clickname,
+                            date: this.clickdate
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(alert("请稍后查看操作是否成功"))
+                    .then(window.location.reload())
+                    .catch(error => console.error('Error', error))
+                },
+                reject() {//拒绝申请
+                    fetch('/reject', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            name: this.clickname,
+                            date: this.clickdate
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(alert("请稍后确认操作是否成功"))
+                    .then(window.location.reload())
+                    .catch(error => console.error('Error', error))
+                },
+                delete_lv() { //删除数据
+                    fetch('/del-data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            name: this.clickname,
+                            date: this.clickdate
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(alert("请稍后确认操作是否成功"))
+                    .then(window.location.reload())
+                    .catch(error => console.error('Error:', error));
+
+                },
+                bgColor(i, l) {//根据status改变颜色背景
+                    if (this.statuses[i][l] === 2) {
+                        return 'bg-success';
+                    } else if (this.statuses[i][l] === 3) {
+                        return 'bg-danger';
+                    } else {
+                        return 'bg-secondary';
+                    }
+                },
+                showreason(i, l) {//鼠标停留后出现请假理由，好像用不了
+                    if (this.username === this.names[i][l] || this.permission === 0) {
+                        return this.reasons[i][l];
+                    } else {
+                        return null
+                    }
+                },
+                get_thismonth() {//获取下个月的数据并更新data
+                    this.dates = this.threemonth[0];
+                    this.weeks = this.threemweek[0];
+                    this.fetchData(this.dates);
+                },
+                get_nextmonth() {//获取下个月的数据并更新data
+                    this.dates = this.threemonth[1];
+                    this.weeks = this.threemweek[1];
+                    this.fetchData(this.dates);
+                },
+                get_next2month() {//获取下个月的数据并更新data
+                    this.dates = this.threemonth[2];
+                    this.weeks = this.threemweek[2];
+                    this.fetchData(this.dates);
+                },
+                less4(doubleList) {// 最多四个被批准
+                    for (let i = 0; i < doubleList.length; i++) {  // 遍历每个子列表
+                        for (let j = 0; j < Math.min(4, doubleList[i].length); j++) {  // 遍历子列表的前四个元素
+                            if (doubleList[i][j] === 1) {  // 如果元素是1
+                                doubleList[i][j] = 2;  // 将其改为2
+                            }
+                        }
+                    }
+                    return doubleList;
+                }
+            }
+        })
+    </script>
+</body>
+</html>

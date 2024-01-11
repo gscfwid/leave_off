@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>打工人登录</title>
+
+   
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-center">登录</h2>
+        <!-- 登录表单 -->
+    </div>
+    <!-- Add your login form here -->
+    <div class="container" id="app">
+        <div class="row justify-content-center">
+          <div class="col-md-6 col-lg-4">
+            <form @submit.prevent="handleSubmit" class="mt-4">
+                <div class="form-group">
+                  <label for="username">账号:</label>
+                  <input type="text" class="form-control" name="username" v-model="username" id="username">
+                </div>
+                <div class="form-group">
+                  <label for="password">密码:</label>
+                  <input type="password" class="form-control" name="password" v-model="password" id="password">
+                </div>
+                <div class="container">
+                    <div class="row">
+                        <div class="col text-center">
+                            <button type="submit" class="btn btn-primary">登录</button>
+                            <a href="/register" class="btn btn-link">注册</a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <!-- <a href="/register" class="btn btn-link">注册</a> -->
+          </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>   
+    <script src="https://unpkg.com/v-tooltip"></script>    
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/popper.js/1.16.1/umd/popper.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+              username: '',
+              password: '',
+            },
+            methods: {
+              handleSubmit() {
+                  const payload = {
+                        username: this.username,
+                        password: this.password
+                  };
+                  fetch('/login', {
+                        method: 'POST',
+                        headers: {
+                        'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                  .then(response => response.json())
+                  .then(data => {
+                      console.log("Response:", data);
+                      if (data["success"]) {
+                        // alert(data["message"]);
+                        window.location.href = ('/')
+                      } else {
+                        alert(data["message"]);
+                        window.location.href = ('/login')
+                      }})
+                  .catch((error) => {
+                      console.error('Error:', error);
+                  });
+              }
+            }
+        })
+    </script>
+</body>
+</html>

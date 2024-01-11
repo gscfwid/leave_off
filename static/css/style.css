@@ -1,0 +1,36 @@
+/* Your CSS Styles */
+.clickable {
+    cursor: pointer; /* 鼠标悬停时变为手型 */
+    /* 可以添加其他样式如颜色变化等来增加交互感 */
+}
+/* 定义鼠标悬停时的样式 */
+.clickable:hover {
+    text-decoration: underline; /* 添加横线 */
+    color: rgb(255, 255, 255); /* 文本变色，你可以自定义颜色 */
+}
+/* 覆盖全屏的对话框遮罩 */
+.dialog-overlay {
+    position: fixed; /* 或 position: absolute; */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* 半透明背景 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000; /* 确保它在其他内容之上 */
+}
+  
+  /* 对话框样式 */
+.dialog {
+    border: 1px solid #ccc;
+    padding: 20px;
+    background-color: white;
+    z-index: 1001; /* 确保对话框在遮罩之上 */
+}
+/* 假设这是你的 tooltip 文本的类名 */
+.scrollable-container {
+    max-height: 800px; /* or whatever height you prefer */
+    overflow-y: auto; /* This will add a scrollbar if content exceeds the height */
+}

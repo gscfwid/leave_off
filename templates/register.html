@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>打工人注册</title>
+   
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/popper.js/1.16.1/umd/popper.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-center">注册</h2>
+        <p class="text-center">请用自己的姓名注册为账号</p>
+    </div>
+    <div class="container" id="app">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                <form @submit.prevent="handleSubmit" class="mt-4">
+                    <div class="form-group">    
+                        <label for="username">账号:</label>
+                        <input type="text" class="form-control" v-model="username" required>
+                    </div>
+                    <div class="form-group">    
+                        <label for="password">密码:</label>
+                        <input type="password" class="form-control" v-model="password" required>
+                    </div>
+                    <div class="form-group">    
+                        <label for="password">确认密码:</label>
+                        <input type="password" class="form-control" v-model="confirm_password" required>
+                    </div>
+                    <div class="row">
+                        <div class="col text-center">
+                            <button type="submit" class="btn btn-primary">注册</button>
+                            <a href="/login" class="btn btn-link">转到登录</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>   
+    <script src="https://unpkg.com/v-tooltip"></script>
+    <script>
+        // Vue instance
+        var app = new Vue({
+          el: '#app',
+          data: {
+            username: '',
+            password: '',
+            confirm_password: '',
+          },
+          methods: {
+            handleSubmit() {
+                if (this.password != this.confirm_password) {
+                    alert("两次输入的密码不同，请检查");
+                } else {
+                    // Constructing the payload
+                    const payload = {
+                        username: this.username,
+                        password: this.password
+                    };
+                    // Sending data to Flask server
+                    fetch('/register', {
+                        method: 'POST',
+                        headers: {
+                        'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Response:", data);
+                        if (data["success"]) {
+                            alert(data["message"]);
+                            window.location.href = '/login';
+                        } else {
+                            alert(data["message"]);
+                        }
+                        // Handle response here
+                        // e.g., redirecting or showing a message
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
+                }
+            }
+          }
+        });
+    </script> 
+</body>
+</html>
