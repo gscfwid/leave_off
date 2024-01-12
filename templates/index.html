@@ -33,8 +33,8 @@
                     <!-- 添加点击事件 -->
                         <td class="clickable col" @click="showDateSubmit = true, clickdate = date" style="width: 20%">{{ date }}</td>
                         <td class = "col" style="width: 10%">{{ weeks[i] }}</td>
-                        <td v-if="closeDates.includes(date)">放假封闭期</td>
-                        <td v-else v-for="(name, l) in names[i]" :key="l" :class="[getClass(name), bgColor(i, l)]" @click="clickMethod(i, l)">{{ name }}</td>
+                        <td v-if="closeDates.includes(date)" class="btn-danger">放假封闭期</td>
+                        <td v-for="(name, l) in names[i]" :key="l" v-if="name != 'admin'" :class="[getClass(name), bgColor(i, l)]" @click="clickMethod(i, l)">{{ name }}</td>
                         
                 </tr>
         </table>
@@ -99,7 +99,13 @@
             </div>
         </div> -->
     </div>
-
+    <div class="footer container text-center">
+        <!-- 页脚备案号信息 -->
+        <p>版权所有 &copy; 2024 伊哇哇</p>
+        <p>
+            <a href="https://beian.miit.gov.cn" target="_blank">粤ICP备2024164764号</a>
+        </p>
+    </div>
 
     <!-- 引入 Vue.js和vue-tooltip -->
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>   
@@ -214,9 +220,13 @@
                 // adminAdd() { //管理员添加请假人员到数据库
 
                 // },
-                openClose() { //封闭或开放该天
-
-                },
+            //     getFilteredNames(index) {
+            //         if (this.names && this.names[index]) {
+            // // 这里的 "name" 是 filter 方法为每个元素调用的回调函数的参数
+            //             return this.names[index].filter(name => name !== 'admin');
+            //         }
+            //         return [];
+            //     },
                 sendData() {
                     // 发送请求到后端，将请假日期理由写入数据库
                     fetch('/submit-data', {
@@ -231,14 +241,14 @@
                         })
                     })
                     .then(response => response.json())
+                    // .catch(error => console.error('Error:', error))
                     .then(data => {
-                        console.log("Data submitted successfully", data);
-                        // alert(JSON.stringify(data.name) + JSON.stringify(data.message) + '\n请假日期' + JSON.stringify(data.date));
-                        // alert(data.name + data.message + '\n请假日期' + data.date);
-                        alert(data)
-                        this.fetchData(this.dates);
+                        console.log("Data submitted successfully", JSON.stringify(data));
+                        alert(JSON.stringify(data))
                     })
+                    .then(alert("稍后确认操作是否成功"))
                     .catch(error => console.error('Error:', error));
+                    this.fetchData(this.dates);
                 },
                 get_userinfo() { //获取登录账号和权限
                     fetch('/api/usr_info')
@@ -325,11 +335,11 @@
                 },
                 bgColor(i, l) {//根据status改变颜色背景
                     if (this.statuses[i][l] === 2) {
-                        return 'bg-success';
+                        return 'btn-success';
                     } else if (this.statuses[i][l] === 3) {
-                        return 'bg-danger';
+                        return 'btn-danger';
                     } else {
-                        return 'bg-secondary';
+                        return 'btn-secondary';
                     }
                 },
                 showreason(i, l) {//鼠标停留后出现请假理由，好像用不了
