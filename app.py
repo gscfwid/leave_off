@@ -140,17 +140,20 @@ def submit_data():
     date = data['date']
     text = data['text']
     level = data['level']
-    existing_lv = leaves.query.filter_by(name=current_user.username, lvdate=date).first()
-    today = datetime.now().strftime("%Y-%m-%d")
-    max_lv = leaves.query.filter(and_(leaves.name==current_user.username, leaves.lvdate > today)).all()
-    if existing_lv:
-        return jsonify({"message": "已请过假了，不用重复提交", "date": date, "name": current_user.username})
-    elif len(max_lv) > 4:
-        return jsonify({"message": "请假次数超了", "date": date, "name": current_user.username})
+    if current_user != "admin":
+        existing_lv = leaves.query.filter_by(name=current_user.username, lvdate=date).first()
+        today = datetime.now().strftime("%Y-%m-%d")
+        max_lv = leaves.query.filter(and_(leaves.name==current_user.username, leaves.lvdate > today)).all()
+        if existing_lv:
+            return jsonify({"message": "已请过假了，不用重复提交", "date": date, "name": current_user.username})
+        elif len(max_lv) > 4:
+            return jsonify({"message": "请假次数超了", "date": date, "name": current_user.username})
+        else:
+            new_leave = leaves(name=current_user.username, lvdate=date, reason=text, status=1, userlevel=level)
+            db.session.add(new_leave)
+            db.session.commit()
     else:
-        new_leave = leaves(name=current_user.username, lvdate=date, reason=text, status=1, userlevel=level)
-        db.session.add(new_leave)
-        db.session.commit()
+        
 
     return jsonify({"message": "已提交请假申请", "date": date, "name": current_user.username})
 

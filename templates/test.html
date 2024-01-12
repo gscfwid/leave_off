@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vue与Bootstrap模态框示例</title>
+    <!-- 引入Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="[[ url_for('static', filename='css/style.css') ]]">
+<body>
+    <div id="app">
+        <!-- 按钮用于触发模态框 -->
+        <button class="btn btn-primary" @click="showModal1m">显示模态框 1</button>
+        <button class="btn btn-secondary" @click="showModal2m">显示模态框 2</button>
+
+        <!-- 模态框 1 -->
+        <div class="modal modal-dialog-centered" id="modal1" tabindex="-1" role="dialog" aria-hidden="true" v-if="showModal1" style="display: block;">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">模态框 1</h5>
+                        <button type="button" class="close" @click="showModal1 = false">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        这是第一个模态框的内容。
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模态框 2 -->
+        <div class="modal modal-dialog-centered" id="modal2" tabindex="-1" role="dialog" aria-hidden="true" v-if="showModal2" style="display: block;">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">模态框 2</h5>
+                        <button type="button" class="close" @click="showModal2 = false">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        这是第二个模态框的内容。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>   
+    <script src="https://unpkg.com/v-tooltip"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/popper.js/1.16.1/umd/popper.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                showModal1: false,
+                showModal2: false
+            },
+            created: function() {
+                // 在实例创建完成后被立即调用
+                // 在这里，模态框的显示状态已经初始化为false，所以不会显示
+            },
+            methods: {
+                showModal1m() {
+                    this.showModal1 = true
+                },
+                showModal2m() {
+                    this.showModal2 = true
+                }
+            }
+        });
+    </script>
+</body>
+</html>

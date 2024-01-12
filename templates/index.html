@@ -31,32 +31,58 @@
         <table class="table table-bordered table-striped table-hover">
                 <tr v-for="(date, i) in dates" :key="i" >
                     <!-- 添加点击事件 -->
-                        <td :class="{ clickable: permission === 1 }" @click="showDialog(date)" class = "col" style="width: 20%">{{ date }}</td>
+                        <td class="clickable col" @click="showDialog(date)" style="width: 20%">{{ date }}</td>
                         <td class = "col" style="width: 10%">{{ weeks[i] }}</td>
-                        <td v-for="(name, l) in names[i]" :key="l" :class="[getClass(name), bgColor(i, l)]" @click="clickMethod(i, l)" >{{ name }}</td>
+                        <td v-if="openLabel[date]" v-for="(name, l) in names[i]" :key="l" :class="[getClass(name), bgColor(i, l)]" @click="clickMethod(i, l)">{{ name }}</td>
+                        <td v-else class="btn-danger">放假封闭期</td>
                 </tr>
         </table>
         <!-- Modal -->
-        <div v-if="showDiv" class="modal modal-dialog-centered" tabindex="-1" role="dialog" style="display: block;" @click.self="showDiv = false">
+        <div id="modal1" v-if="showDiv" class="modal modal-dialog-centered" tabindex="-1" role="dialog" style="display: block;" @click.self="showDiv = false">
             <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                <h5 class="modal-title">请假信息</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="showDiv = false">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-                </div>
-                <div class="modal-body">
-                <p>请假人: {{ clickname }}</p>
-                <p>请假日期: {{ clickdate }}</p>
-                <p>请假原因: {{ clickreason }}</p>
-                </div>
-                <div class="modal-footer">
-                <button v-if="permission === 0" type="button" class="btn btn-success" @click="approve">批准</button>
-                <button v-if="permission === 0" type="button" class="btn btn-danger" @click="reject">拒绝</button>
-                <button type="button" class="btn btn-secondary" @click="delete_lv">删除</button>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">请假信息</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="showDiv = false">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>请假人: {{ clickname }}</p>
+                        <p>请假日期: {{ clickdate }}</p>
+                        <p>请假原因: {{ clickreason }}</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button v-if="permission === 0" type="button" class="btn btn-success" @click="approve">批准</button>
+                        <button v-if="permission === 0" type="button" class="btn btn-danger" @click="reject">拒绝</button>
+                        <button type="button" class="btn btn-secondary" @click="delete_lv">删除</button>
+                    </div>
                 </div>
             </div>
+        </div>
+        <!-- Modal -->
+        <div id="modal2" v-if="showDivAdmin" class="modal modal-dialog-centered" tabindex="-1" role="dialog" style="display: block;" @click.self="showDivAdmin = false">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">如何操作？</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="showDivAdmin = false">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <div class="form-group">
+                                <label for="textInput">{{ currentDate }}新增请假人员</label>
+                                <input type="text" class="form-control" id="textInput" placeholder="请输入姓名">
+                            </div>
+                            <button type="submit" class="btn btn-primary">新增</button>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @click="openClose">开放/封闭</button>
+                    </div>
+                </div>
             </div>
         </div>
   
@@ -96,7 +122,9 @@
                 clickdate: null,
                 clickname: null,
                 clickreason: null,
-                showDiv: false
+                showDiv: false,
+                showDivAdmin: false,
+                openLabel: {}
             },
             created: function () {
                 let today = new Date();
@@ -113,6 +141,7 @@
                         tmpdates.push(this.formatDate(today)["date"]);
                         tmpweeks.push(this.formatDate(today)["week"]);
                         today.setDate(today.getDate() + 1);
+                        this.openLabel[this.formatDate(today)["date"]] = true;
                     };
                     this.threemonth.push(tmpdates);
                     this.threemweek.push(tmpweeks);
@@ -172,7 +201,20 @@
                             this.currentInput = userInput;
                             this.sendData();
                         }
+                    } else if (this.permission === 0) { // 弹出div让管理员操作
+                        this.showDivAdmin = true;
                     }
+                },
+                adminAdd() { //管理员添加请假人员到数据库
+
+                },
+                openClose() { //封闭或开放该天
+                    if (this.openLabel[this.currentDate]) {
+                        this.openLabel[this.currentDate] = false
+                    } else {
+                        this.openLabel[this.currentDate] = true
+                    }
+                    this.showDivAdmin = false
                 },
                 sendData() {
                     // 发送请求到后端，将请假日期理由写入数据库
