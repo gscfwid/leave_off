@@ -31,10 +31,11 @@
         <table class="table table-bordered table-striped table-hover">
                 <tr v-for="(date, i) in dates" :key="i" >
                     <!-- 添加点击事件 -->
-                        <td class="clickable col" @click="showDialog(date)" style="width: 20%">{{ date }}</td>
+                        <td class="clickable col" @click="showDateSubmit = true, clickdate = date" style="width: 20%">{{ date }}</td>
                         <td class = "col" style="width: 10%">{{ weeks[i] }}</td>
-                        <td v-if="openLabel[date]" v-for="(name, l) in names[i]" :key="l" :class="[getClass(name), bgColor(i, l)]" @click="clickMethod(i, l)">{{ name }}</td>
-                        <td v-else class="btn-danger">放假封闭期</td>
+                        <td v-if="closeDates.includes(date)">放假封闭期</td>
+                        <td v-else v-for="(name, l) in names[i]" :key="l" :class="[getClass(name), bgColor(i, l)]" @click="clickMethod(i, l)">{{ name }}</td>
+                        
                 </tr>
         </table>
         <!-- Modal -->
@@ -61,26 +62,28 @@
             </div>
         </div>
         <!-- Modal -->
-        <div id="modal2" v-if="showDivAdmin" class="modal modal-dialog-centered" tabindex="-1" role="dialog" style="display: block;" @click.self="showDivAdmin = false">
+        <div id="modal2" v-if="showDateSubmit" class="modal modal-dialog-centered" tabindex="-1" role="dialog" style="display: block;" @click.self="showDateSubmit = false">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">如何操作？</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="showDivAdmin = false">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="showDateSubmit = false">
                                 <span aria-hidden="true">&times;</span>
                             </button>
                     </div>
                     <div class="modal-body">
-                        <form>
+                        <form @submit="sendData">
                             <div class="form-group">
-                                <label for="textInput">{{ currentDate }}新增请假人员</label>
-                                <input type="text" class="form-control" id="textInput" placeholder="请输入姓名">
+                                <label v-if="permission === 0" for="textInput">{{ clickdate }}新增请假人员</label>
+                                <label v-else for="textInput">{{ clickdate }}请假事由</label>
+                                <input v-if="permission === 0" type="text" class="form-control" id="textInput" placeholder="请输入姓名" v-model="inputContent" required>
+                                <input v-else type="text" class="form-control" id="textInput" placeholder="请输入请假事由" v-model="inputContent">
                             </div>
-                            <button type="submit" class="btn btn-primary">新增</button>
+                            <button type="submit" class="btn btn-primary">提交</button>
                         </form>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @click="openClose">开放/封闭</button>
+                    <div v-if="permission === 0" class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @click="sendData(), showDateSubmit = false">开放/封闭</button>
                     </div>
                 </div>
             </div>
@@ -116,6 +119,8 @@
                 levels: [],
                 statuses: [],
                 reasons: [],
+                closeDates: [],
+                inputContent: "",
                 username: null,
                 userlevel: null,
                 permission: null,
@@ -123,7 +128,7 @@
                 clickname: null,
                 clickreason: null,
                 showDiv: false,
-                showDivAdmin: false,
+                showDateSubmit: false,
                 openLabel: {}
             },
             created: function () {
@@ -188,33 +193,29 @@
                         .then(data => { this.names = data["names"];
                             this.reasons = data["reasons"];
                             this.levels = data['userlevel'];
-                            this.statuses = this.less4(data["statuses"])
+                            this.statuses = this.less4(data["statuses"]);
+                            this.closeDates = data["closedates"]
                         })
                         .then()
                         .catch(error => console.error('Error:', error));
                 },
-                showDialog(date) {// 弹出对话框让用户输入文本
-                    this.currentDate = date;
-                    if (this.permission === 1) {
-                        var userInput = prompt('请填入' + date + '的请假事由');
-                        if (userInput) {
-                            this.currentInput = userInput;
-                            this.sendData();
-                        }
-                    } else if (this.permission === 0) { // 弹出div让管理员操作
-                        this.showDivAdmin = true;
-                    }
-                },
-                adminAdd() { //管理员添加请假人员到数据库
+                // showDialog(date) {// 弹出对话框让用户输入文本
+                //     this.currentDate = date;
+                //     if (this.permission === 1) {
+                //         var userInput = prompt('请填入' + date + '的请假事由');
+                //         if (userInput) {
+                //             this.currentInput = userInput;
+                //             this.sendData();
+                //         }
+                //     } else if (this.permission === 0) { // 弹出div让管理员操作
+                //         this.showDivAdmin = true;
+                //     }
+                // },
+                // adminAdd() { //管理员添加请假人员到数据库
 
-                },
+                // },
                 openClose() { //封闭或开放该天
-                    if (this.openLabel[this.currentDate]) {
-                        this.openLabel[this.currentDate] = false
-                    } else {
-                        this.openLabel[this.currentDate] = true
-                    }
-                    this.showDivAdmin = false
+
                 },
                 sendData() {
                     // 发送请求到后端，将请假日期理由写入数据库
@@ -224,8 +225,8 @@
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            date: this.currentDate,
-                            text: this.currentInput,
+                            date: this.clickdate,
+                            text: this.inputContent,
                             level: this.userlevel
                         })
                     })
@@ -233,7 +234,8 @@
                     .then(data => {
                         console.log("Data submitted successfully", data);
                         // alert(JSON.stringify(data.name) + JSON.stringify(data.message) + '\n请假日期' + JSON.stringify(data.date));
-                        alert(data.name + data.message + '\n请假日期' + data.date);
+                        // alert(data.name + data.message + '\n请假日期' + data.date);
+                        alert(data)
                         this.fetchData(this.dates);
                     })
                     .catch(error => console.error('Error:', error));

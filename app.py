@@ -122,17 +122,22 @@ def fetch_data():
     data = request.json
     # print(data)
     days = data['dates']
-    
+    closedates = []
     # Assume you have a database setup with SQLAlchemy and a model called Event
     # Query database for each date and get relevant data
     lvnames = [[i.name for i in leaves.query.filter_by(lvdate=day).all()] for day in days]
     lvreasons = [[i.reason for i in leaves.query.filter_by(lvdate=day).all()] for day in days]
     lvstatuses = [[i.status for i in leaves.query.filter_by(lvdate=day).all()] for day in days]
     lvlevels = [[i.userlevel for i in leaves.query.filter_by(lvdate=day).all()] for day in days]
+    # for i_day in range(len(days)):
+    #     if "admin" in lvnames[i_day]:
+    #         closedates.append()
+    closedates = [days[i] for i in range(len(days)) if "admin" in lvnames[i]]
     # print(lvnames)
     # Format and send the results back to frontend
     # formatted_results = format_results(lvname)  # You'll need to implement this based on your data
-    return jsonify({"names": lvnames, "reasons": lvreasons, "statuses": lvstatuses, "userlevel": lvlevels})
+    return jsonify({"names": lvnames, "reasons": lvreasons, "statuses": lvstatuses, 
+                    "userlevel": lvlevels, "closedates": closedates})
 
 @app.route('/submit-data', methods=['POST'])
 def submit_data():
@@ -140,22 +145,46 @@ def submit_data():
     date = data['date']
     text = data['text']
     level = data['level']
-    if current_user != "admin":
+    today = datetime.now().strftime("%Y-%m-%d")
+    message = ""
+    if current_user.username != "admin":
         existing_lv = leaves.query.filter_by(name=current_user.username, lvdate=date).first()
-        today = datetime.now().strftime("%Y-%m-%d")
         max_lv = leaves.query.filter(and_(leaves.name==current_user.username, leaves.lvdate > today)).all()
         if existing_lv:
-            return jsonify({"message": "已请过假了，不用重复提交", "date": date, "name": current_user.username})
+            # return jsonify({"message": "已请过假了，不用重复提交", "date": date, "name": current_user.username})
+            return jsonify("{}在{}已经请过假了，不要重复提交".format(current_user.username, date))
         elif len(max_lv) > 4:
-            return jsonify({"message": "请假次数超了", "date": date, "name": current_user.username})
+            return jsonify("{}请假次数超了".format(current_user.username))
         else:
             new_leave = leaves(name=current_user.username, lvdate=date, reason=text, status=1, userlevel=level)
             db.session.add(new_leave)
             db.session.commit()
+            return jsonify("{}在{}请假申请已提交".format(current_user.username, date))
     else:
-        
+        addname = text
+        if text != "":
+            existing_lv = leaves.query.filter_by(name=addname, lvdate=date).first()
+            max_lv = leaves.query.filter(and_(leaves.name==addname, leaves.lvdate > today)).all()
+            if existing_lv:
+                return jsonify("{}在{}已经请过假了，不要重复提交".format(addname, date))
+            elif len(max_lv) > 4:
+                message = "{}请假次数超了,请注意".format(addname)
+            new_leave = leaves(name=addname, lvdate=date, reason="管理员添加", status=1, userlevel=level)
+            db.session.add(new_leave)
+            db.session.commit()
+            return jsonify("{}在{}请假申请已提交,{}".format(addname, date, message))
+        else:
+            existing_lv = leaves.query.filter_by(name=current_user.username, lvdate=date).first()
+            if existing_lv:
+                db.session.delete(existing_lv)
+                db.session.commit()
+                return jsonify("{}已开放".format(date))
+            else:
+                new_leave = leaves(name=current_user.username, lvdate=date, reason="管理员添加", status=1, userlevel=level)
+                db.session.add(new_leave)
+                db.session.commit()
+                return jsonify("{}已封闭".format(date))
 
-    return jsonify({"message": "已提交请假申请", "date": date, "name": current_user.username})
 
 @app.route('/del-data', methods=['POST'])
 def del_data():
