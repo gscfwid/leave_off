@@ -10,7 +10,6 @@ app = Flask(__name__)
 
 # 这一步可以用不先把数据表建立出来，在终端中创建就可以
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///leave.db'
-app.config['SECRET_KEY'] = 'fshmzk666'
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)

@@ -368,13 +368,22 @@
                     for (let i = 0; i < doubleList.length; i++) {  // 遍历每个子列表
                         let maxappr1 = 0
                         let maxappr2 = 0
+                        let maxappr3 = 0
                         for (let j = 0; j <  doubleList[i].length; j++) {  // 遍历子列表的前四个元素
                             if (doubleList[i][j] === 1 && this.levels[i][j] === 1 && maxappr1 < 2) {  // 如果元素是1
                                 doubleList[i][j] = 2;  // 将其改为2
                                 maxappr1 ++
+                                maxappr3 ++
                             } else if (doubleList[i][j] === 1 && this.levels[i][j] === 2 && maxappr2 < 2) {
                                 doubleList[i][j] = 2;
                                 maxappr2 ++
+                                maxappr3 ++
+                            } else if (this.levels[i][j] === 3) {
+                                maxappr3 ++
+                            }
+                            
+                            if (maxappr3 >= 4) {
+                                break;
                             }
                         }
                     }
